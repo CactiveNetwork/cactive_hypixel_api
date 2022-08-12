@@ -143,74 +143,46 @@ impl Client {
         Self { key, cache }
     }
 
-    fn map_external_error(mut errors: Vec<APIError>) -> Vec<InternalError> {
-        errors.drain(..).map(|error| error.into()).collect()
-    }
-
     pub fn nickname_history(
         &self,
         nickname: String,
     ) -> Result<Vec<NicknameHistory>, Vec<InternalError>> {
-        let request = match reqwest::blocking::get(format!(
-            "{}/nickname-history?key={}&cache={}&nickname={}",
-            API.to_owned(),
-            self.key,
-            self.cache,
-            nickname
-        )) {
-            Ok(req) => req,
-            Err(err) => return Err(vec![err.into()]),
-        };
-        map_errors(request)
+        Self::request_data(format!(
+            "{API}/nickname-history?key={}&cache={}&nickname={nickname}",
+            self.key, self.cache,
+        ))
     }
 
     pub fn player_data(&self, uuid: String) -> Result<PlayerData, Vec<InternalError>> {
-        let request = match reqwest::blocking::get(format!(
-            "{}/player-data?key={}&cache={}&uuid={}",
-            API.to_owned(),
-            self.key,
-            self.cache,
-            uuid
-        )) {
-            Ok(req) => req,
-            Err(err) => return Err(vec![err.into()]),
-        };
-        map_errors(request)
+        Self::request_data(format!(
+            "{API}/player-data?key={}&cache={}&uuid={uuid}",
+            self.key, self.cache,
+        ))
     }
 
     pub fn staff_tracker(&self, filter: String) -> Result<Vec<StaffTracker>, Vec<InternalError>> {
-        let request = match reqwest::blocking::get(format!(
-            "{}/staff-tracker?key={}&cache={}&filter={}",
-            API.to_owned(),
-            self.key,
-            self.cache,
-            filter
-        )) {
-            Ok(req) => req,
-            Err(err) => return Err(vec![err.into()]),
-        };
-        map_errors(request)
+        Self::request_data(format!(
+            "{API}/staff-tracker?key={}&cache={}&filter={filter}",
+            self.key, self.cache,
+        ))
     }
 
     pub fn punishment_data(&self, id: String) -> Result<PunishmentData, Vec<InternalError>> {
-        let request = match reqwest::blocking::get(format!(
-            "{}/staff-tracker?key={}&cache={}&id={id}",
-            API.to_owned(),
-            self.key,
-            self.cache,
-        )) {
-            Ok(req) => req,
-            Err(err) => return Err(vec![err.into()]),
-        };
-        map_errors(request)
+        Self::request_data(format!(
+            "{API}/staff-tracker?key={}&cache={}&id={id}",
+            self.key, self.cache,
+        ))
     }
 
     pub fn key_data(&self) -> Result<KeyData, Vec<InternalError>> {
-        let request =
-            match reqwest::blocking::get(format!("{}/key?key={}", API.to_owned(), self.key)) {
-                Ok(req) => req,
-                Err(err) => return Err(vec![err.into()]),
-            };
+        Self::request_data(format!("{API}/key?key={}", self.key))
+    }
+
+    fn request_data<T: DeserializeOwned>(url: String) -> Result<T, Vec<InternalError>> {
+        let request = match reqwest::blocking::get(url) {
+            Ok(req) => req,
+            Err(err) => return Err(vec![err.into()]),
+        };
         map_errors(request)
     }
 }
@@ -223,7 +195,12 @@ fn map_errors<T: DeserializeOwned>(
             if json.success {
                 Ok(json.data.unwrap())
             } else {
-                Err(Client::map_external_error(json.errors.unwrap()))
+                Err(json
+                    .errors
+                    .unwrap()
+                    .into_iter()
+                    .map(|error| error.into())
+                    .collect())
             }
         }
         Err(err) => Err(vec![err.into()]),
