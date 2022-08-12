@@ -192,7 +192,7 @@ impl Client {
                     Err(Client::map_external_error(json.errors.unwrap()))
                 }
             },
-            Err(err) => return Err(Client::map_internal_error(err.to_string()))
+            Err(err) => Err(Client::map_internal_error(err.to_string()))
         }
     }
 
@@ -212,14 +212,14 @@ impl Client {
                     Err(Client::map_external_error(json.errors.unwrap()))
                 }
             },
-            Err(err) => return Err(Client::map_internal_error(err.to_string()))
+            Err(err) => Err(Client::map_internal_error(err.to_string()))
         }
     }
 
-    pub async fn staff_tracker(&self) -> Result<Vec<StaffTracker>, Vec<InternalError>> {
+    pub async fn staff_tracker(&self, filter: String) -> Result<Vec<StaffTracker>, Vec<InternalError>> {
         let request = match reqwest::get(format!(
-            "{}/staff-tracker?key={}&cache={}",
-            API.to_owned(), self.key, self.cache
+            "{}/staff-tracker?key={}&cache={}&filter={}",
+            API.to_owned(), self.key, self.cache, filter
         )).await {
             Ok(req) => req,
             Err(err) => return Err(Client::map_internal_error(err.to_string()))
@@ -232,7 +232,7 @@ impl Client {
                     Err(Client::map_external_error(json.errors.unwrap()))
                 }
             },
-            Err(err) => return Err(Client::map_internal_error(err.to_string()))
+            Err(err) => Err(Client::map_internal_error(err.to_string()))
         }
     }
 
@@ -252,7 +252,7 @@ impl Client {
                     Err(Client::map_external_error(json.errors.unwrap()))
                 }
             },
-            Err(err) => return Err(Client::map_internal_error(err.to_string()))
+            Err(err) => Err(Client::map_internal_error(err.to_string()))
         }
     }
 
@@ -272,7 +272,7 @@ impl Client {
                     Err(Client::map_external_error(json.errors.unwrap()))
                 }
             },
-            Err(err) => return Err(Client::map_internal_error(err.to_string()))
+            Err(err) => Err(Client::map_internal_error(err.to_string()))
         }
     }
 }
