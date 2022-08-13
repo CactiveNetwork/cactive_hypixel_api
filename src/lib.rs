@@ -93,7 +93,7 @@ pub struct StaffTracker {
     pub online: Option<bool>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct InternalError {
     pub r#type: String,
     pub code: u16,
