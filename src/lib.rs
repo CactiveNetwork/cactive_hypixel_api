@@ -143,7 +143,7 @@ impl Client {
         Self { key, cache }
     }
 
-    pub fn nickname_history(
+    pub async fn nickname_history(
         &self,
         nickname: String,
     ) -> Result<Vec<NicknameHistory>, Vec<InternalError>> {
@@ -151,46 +151,57 @@ impl Client {
             "{API}/nickname-history?key={}&cache={}&nickname={nickname}",
             self.key, self.cache,
         ))
+        .await
     }
 
-    pub fn player_data(&self, uuid: String) -> Result<PlayerData, Vec<InternalError>> {
+    pub async fn player_data(&self, uuid: String) -> Result<PlayerData, Vec<InternalError>> {
         Self::request_data(format!(
             "{API}/player-data?key={}&cache={}&uuid={uuid}",
             self.key, self.cache,
         ))
+        .await
     }
 
-    pub fn staff_tracker(&self, filter: String) -> Result<Vec<StaffTracker>, Vec<InternalError>> {
+    pub async fn staff_tracker(
+        &self,
+        filter: String,
+    ) -> Result<Vec<StaffTracker>, Vec<InternalError>> {
         Self::request_data(format!(
             "{API}/staff-tracker?key={}&cache={}&filter={filter}",
             self.key, self.cache,
         ))
+        .await
     }
 
-    pub fn punishment_data(&self, id: String) -> Result<PunishmentData, Vec<InternalError>> {
+    pub async fn punishment_data(&self, id: String) -> Result<PunishmentData, Vec<InternalError>> {
         Self::request_data(format!(
             "{API}/staff-tracker?key={}&cache={}&id={id}",
             self.key, self.cache,
         ))
+        .await
     }
 
-    pub fn key_data(&self) -> Result<KeyData, Vec<InternalError>> {
-        Self::request_data(format!("{API}/key?key={}", self.key))
+    pub async fn key_data(&self) -> Result<KeyData, Vec<InternalError>> {
+        Self::request_data(format!("{API}/key?key={}", self.key)).await
     }
 
-    fn request_data<T: DeserializeOwned>(url: String) -> Result<T, Vec<InternalError>> {
-        let request = match reqwest::blocking::get(url) {
+    async fn request_data<T, S>(url: S) -> Result<T, Vec<InternalError>>
+    where
+        T: DeserializeOwned,
+        S: reqwest::IntoUrl,
+    {
+        let request = match reqwest::get(url).await {
             Ok(req) => req,
             Err(err) => return Err(vec![err.into()]),
         };
-        map_errors(request)
+        map_errors(request).await
     }
 }
 
-fn map_errors<T: DeserializeOwned>(
-    request: reqwest::blocking::Response,
+async fn map_errors<T: DeserializeOwned>(
+    request: reqwest::Response,
 ) -> Result<T, Vec<InternalError>> {
-    match request.json::<APIData<T>>() {
+    match request.json::<APIData<T>>().await {
         Ok(json) => {
             if json.success {
                 Ok(json.data.unwrap())
@@ -207,16 +218,16 @@ fn map_errors<T: DeserializeOwned>(
     }
 }
 
-#[test]
-fn some_really_descriptive_test_name() {
+#[tokio::test]
+async fn some_really_descriptive_test_name() {
     let client = Client::new("key".to_owned(), false);
 
-    match client.nickname_history("k".to_owned()) {
+    match client.nickname_history("k".to_owned()).await {
         Ok(_) => println!("Success"),
         Err(error) => println!("Error {}", error[0].message),
     }
 
-    match client.key_data() {
+    match client.key_data().await {
         Ok(data) => println!("Success {}", data.endpoints[0].id),
         Err(error) => println!("Error {}", error[0].message),
     }
