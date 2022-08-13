@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 use serde::{de::DeserializeOwned, Deserialize};
 
 const API: &str = "https://hypixel.cactive.network/api/v3";
@@ -139,10 +141,31 @@ impl From<reqwest::Error> for InternalError {
 }
 
 impl Client {
+    /// Create a new client, providing a key string and a cache boolean.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use cactive_hypixel_api::Client;
+    ///
+    /// let key = "my_api_key".to_owned();
+    /// let client = Client::new(key, false);
+    /// ```
     pub fn new(key: String, cache: bool) -> Self {
         Self { key, cache }
     }
 
+    /// Retrieve an ascending vector of players referenced from the nickname parameter.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let nickname = "angry_and_free".to_owned();
+    /// let data = match client.nickname_history(nickname).await {
+    ///     Ok(data) => data,
+    ///     Err(err) => return println!("{}", err[0].message),
+    /// };
+    /// ```
     pub async fn nickname_history(
         &self,
         nickname: String,
@@ -154,6 +177,17 @@ impl Client {
         .await
     }
 
+    /// Retrieve a structure of player data, providing a uuid parameter.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let uuid = "eea2d4fd-a8b8-413b-9439-f06faaf7e109".to_owned();
+    /// let data = match client.player_data(uuid).await {
+    ///     Ok(data) => data,
+    ///     Err(err) => return println!("{}", err[0].message),
+    /// };
+    /// ```
     pub async fn player_data(&self, uuid: String) -> Result<PlayerData, Vec<InternalError>> {
         Self::request_data(format!(
             "{API}/player-data?key={}&cache={}&uuid={uuid}",
@@ -162,6 +196,17 @@ impl Client {
         .await
     }
 
+    /// Retrieve an ascending vector of Hypixel staff providing a filter ("all", "online", "offline") parameter.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let filter = "online".to_owned();
+    /// let data = match client.staff_tracker(filter).await {
+    ///     Ok(data) => data,
+    ///     Err(err) => return println!("{}", err[0].message),
+    /// };
+    /// ```
     pub async fn staff_tracker(
         &self,
         filter: String,
@@ -173,6 +218,17 @@ impl Client {
         .await
     }
 
+    /// Retrieve a structure of punishment data, providing an ID parameter.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let id = "C256D602".to_owned();
+    /// let data = match client.punishment_data(id).await {
+    ///     Ok(data) => data,
+    ///     Err(err) => return println!("{}", err[0].message),
+    /// };
+    /// ```
     pub async fn punishment_data(&self, id: String) -> Result<PunishmentData, Vec<InternalError>> {
         Self::request_data(format!(
             "{API}/staff-tracker?key={}&cache={}&id={id}",
@@ -181,8 +237,19 @@ impl Client {
         .await
     }
 
-    pub async fn key_data(&self) -> Result<KeyData, Vec<InternalError>> {
-        Self::request_data(format!("{API}/key?key={}", self.key)).await
+    /// Retrieve the key data of the provided an key parameter.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let key = "my_api_key".to_owned();
+    /// let data = match client.key_data(key).await {
+    ///     Ok(data) => data,
+    ///     Err(err) => return println!("{}", err[0].message),
+    /// };
+    /// ```
+    pub async fn key_data(&self, key: String) -> Result<KeyData, Vec<InternalError>> {
+        Self::request_data(format!("{API}/key?key={key}")).await
     }
 
     async fn request_data<T, S>(url: S) -> Result<T, Vec<InternalError>>
@@ -219,15 +286,18 @@ async fn map_errors<T: DeserializeOwned>(
 }
 
 #[tokio::test]
-async fn some_really_descriptive_test_name() {
+async fn nickname_history_test() {
     let client = Client::new("key".to_owned(), false);
-
     match client.nickname_history("k".to_owned()).await {
         Ok(_) => println!("Success"),
         Err(error) => println!("Error {}", error[0].message),
     }
+}
 
-    match client.key_data().await {
+#[tokio::test]
+async fn key_data_test() {
+    let client = Client::new("key".to_owned(), false);
+    match client.key_data("api".to_owned()).await {
         Ok(data) => println!("Success {}", data.endpoints[0].id),
         Err(error) => println!("Error {}", error[0].message),
     }
